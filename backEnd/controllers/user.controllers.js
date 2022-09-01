@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt'); // bibliothèque pour vous aider à hacher les
 const User = require('../models/user.models');
 const jwt = require('jsonwebtoken');  
 
-
+const sanitize = require('mongo-sanitize');
 
 // Function de création de compte
 exports.signup = (req, res, next) => { // signup crypte le mot de passe, hash() de bcrypt crée un hash crypté du mot de passe utilisateur pour l' enregistrer de manière sécurisée dans la base de données
@@ -10,7 +10,7 @@ exports.signup = (req, res, next) => { // signup crypte le mot de passe, hash() 
     .hash(req.body.password, 10) // le salt 10 équivaux au nombre de fois d'éxécution de l'algo de hachachage
     .then(hash => {
         const user = new User({
-            email: req.body.email,
+            email: sanitize(req.body.email),
             password: hash
         });
         user.save()
@@ -22,13 +22,13 @@ exports.signup = (req, res, next) => { // signup crypte le mot de passe, hash() 
 
 // Function d'identification a un compte
 exports.login = (req, res, next) => {
-    User.findOne({ email: req.body.email })
+    User.findOne({ email: sanitize(req.body.email) })
         .then(user => {
             if (!user) {
                 return res.status(401).json({ message: 'Paire login/mot de passe incorrecte'});
             }
             // la fonction compare de bcrypt compare le mot de passe entré par l'utilisateur avec le hash enregistré dans la base de données
-            bcrypt.compare(req.body.password, user.password)
+            bcrypt.compare(sanitize(req.body.password), user.password)
                 .then(valid => {
                     if (!valid) {
                         return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
